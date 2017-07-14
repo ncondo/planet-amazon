@@ -29,7 +29,7 @@ for f, tags in tqdm(df_train.values, miniters=1000):
     targets = np.zeros(17)
     for t in tags.split(' '):
         targets[label_map[t]] = 1
-    x_train.append(cv2.resize(img, (224,224)))
+    x_train.append(cv2.resize(img, (128,128)))
     y_train.append(targets)
 
 y_train = np.array(y_train, np.uint8)
@@ -43,7 +43,7 @@ x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_siz
 model = Sequential()
 model.add(Conv2D(32, kernel_size=(3, 3),
                  activation='relu',
-                 input_shape=(224, 224, 3)))
+                 input_shape=(128, 128, 3)))
 
 model.add(Conv2D(64, (3, 3), activation='relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
