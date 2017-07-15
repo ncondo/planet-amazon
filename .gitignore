@@ -102,3 +102,6 @@ ENV/
 
 # data
 data/*
+
+# model weights
+*.h5
