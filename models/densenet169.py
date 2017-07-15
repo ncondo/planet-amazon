@@ -1,19 +1,27 @@
 # -*- coding: utf-8 -*-
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+import os
+import gc
+import cv2
+from tqdm import tqdm
 
-from keras.optimizers import SGD
 from keras.layers import Input, merge, ZeroPadding2D
 from keras.layers.core import Dense, Dropout, Activation
 from keras.layers.convolutional import Convolution2D
 from keras.layers.pooling import AveragePooling2D, GlobalAveragePooling2D, MaxPooling2D
 from keras.layers.normalization import BatchNormalization
 from keras.models import Model
+from keras import optimizers
+from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.models import load_model
 import keras.backend as K
 
-from sklearn.metrics import log_loss
+from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.metrics import fbeta_score
 
 from custom_layers.scale_layer import Scale
 
-from load_cifar10 import load_cifar10_data
 
 def densenet169_model(img_rows, img_cols, color_type=1, nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.5, dropout_rate=0.0, weight_decay=1e-4, num_classes=None):
     '''
@@ -44,10 +52,10 @@ def densenet169_model(img_rows, img_cols, color_type=1, nb_dense_block=4, growth
     global concat_axis
     if K.image_dim_ordering() == 'tf':
       concat_axis = 3
-      img_input = Input(shape=(224, 224, 3), name='data')
+      img_input = Input(shape=(128, 128, 3), name='data')
     else:
       concat_axis = 1
-      img_input = Input(shape=(3, 224, 224), name='data')
+      img_input = Input(shape=(3, 128, 128), name='data')
 
     # From architecture for ImageNet (Table 1 in the paper)
     nb_filter = 64
@@ -103,8 +111,8 @@ def densenet169_model(img_rows, img_cols, color_type=1, nb_dense_block=4, growth
     model = Model(img_input, x_newfc)
 
     # Learning rate is changed to 0.001
-    sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
+    #sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
+    #model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
 
     return model
 
@@ -201,33 +209,151 @@ def dense_block(x, stage, nb_layers, nb_filter, growth_rate, dropout_rate=None, 
 
     return concat_feat, nb_filter
 
+
 if __name__ == '__main__':
 
-    # Example to fine-tune on 3000 samples from Cifar10
+    x_train = []
+    y_train = []
 
-    img_rows, img_cols = 224, 224 # Resolution of inputs
+    df_train = pd.read_csv('../data/train_v2.csv')
+
+    flatten = lambda l: [item for sublist in l for item in sublist]
+    labels = list(set(flatten([l.split(' ') for l in df_train['tags'].values])))
+
+    labels = ['blow_down',
+     'bare_ground',
+     'conventional_mine',
+     'blooming',
+     'cultivation',
+     'artisinal_mine',
+     'haze',
+     'primary',
+     'slash_burn',
+     'habitation',
+     'clear',
+     'road',
+     'selective_logging',
+     'partly_cloudy',
+     'agriculture',
+     'water',
+     'cloudy']
+
+    label_map = {'agriculture': 14,
+     'artisinal_mine': 5,
+     'bare_ground': 1,
+     'blooming': 3,
+     'blow_down': 0,
+     'clear': 10,
+     'cloudy': 16,
+     'conventional_mine': 2,
+     'cultivation': 4,
+     'habitation': 9,
+     'haze': 6,
+     'partly_cloudy': 13,
+     'primary': 7,
+     'road': 11,
+     'selective_logging': 12,
+     'slash_burn': 8,
+     'water': 15}
+
+    for f, tags in tqdm(df_train.values, miniters=1000):
+        img = cv2.imread('../data/train-jpg/{}.jpg'.format(f))
+        targets = np.zeros(17)
+        for t in tags.split(' '):
+            targets[label_map[t]] = 1
+        x_train.append(cv2.resize(img, (128,128)))
+        y_train.append(targets)
+
+    y_train = np.array(y_train, np.uint8)
+    x_train = np.array(x_train, np.float16) / 255.
+
+    print(x_train.shape)
+    print(y_train.shape)
+
+    trn_index = []
+    val_index = []
+    # change split value for getting different validation splits
+    split = .2
+    index = np.arange(len(x_train))
+    for i in tqdm(range(0,17)):
+        sss = StratifiedShuffleSplit(n_splits=2, test_size=split, random_state=i)
+        for train_index, test_index in sss.split(index,y_train[:,i]):
+            X_train, X_test = index[train_index], index[test_index]
+        # to ensure there is no repetetion within each split and between the splits
+        trn_index = trn_index + list(set(list(X_train)) - set(trn_index) - set(val_index))
+        val_index = val_index + list(set(list(X_test)) - set(val_index) - set(trn_index))
+
+    X_train = np.empty([32383,128,128,3])
+    Y_train = np.empty([32383,17])
+    for i in range(len(trn_index)):
+        X_train[i] = x_train[trn_index[i]]
+        Y_train[i] = y_train[trn_index[i]]
+
+    X_valid = np.empty([8096,128,128,3])
+    Y_valid = np.empty([8096,17])
+    for i in range(len(val_index)):
+        X_valid[i] = x_train[val_index[i]]
+        Y_valid[i] = y_train[val_index[i]]
+
+    del x_train
+    del y_train
+
+    print('X_train {}, Y_train {}'.format(len(X_train), len(Y_train)))
+    print('X_valid {}, Y_valid {}'.format(len(X_valid), len(Y_valid)))
+
+
+    best_weights_path = 'weights.best.h5'
+    img_rows, img_cols = 128, 128 # Resolution of inputs
     channel = 3
-    num_classes = 10
-    batch_size = 16
-    nb_epoch = 10
-
-    # Load Cifar10 data. Please implement your own load_data() module for your own dataset
-    X_train, Y_train, X_valid, Y_valid = load_cifar10_data(img_rows, img_cols)
-
+    num_classes = 17
+    batch_size = 32
     # Load our model
     model = densenet169_model(img_rows=img_rows, img_cols=img_cols, color_type=channel, num_classes=num_classes)
+    epochs_arr = [20, 5, 5]
+    learn_rates = [0.001, 0.0001, 0.00001]
+    for learn_rate, epochs in zip(learn_rates, epochs_arr):
+        opt = optimizers.Adam(lr=learn_rate)
+        model.compile(loss='binary_crossentropy',
+                      optimizer=opt,
+                      metrics=['accuracy'])
+        callbacks = [EarlyStopping(monitor='val_loss', patience=2, verbose=0),
+                     ModelCheckpoint(best_weights_path, monitor='val_loss',
+                     save_best_only=True, verbose=0)]
+        model.fit(x=X_train, y=Y_train, validation_data=(X_valid, Y_valid),
+                  batch_size=batch_size, epochs=epochs, verbose=2, callbacks=callbacks, shuffle=True)
 
-    # Start Fine-tuning
-    model.fit(X_train, Y_train,
-              batch_size=batch_size,
-              nb_epoch=nb_epoch,
-              shuffle=True,
-              verbose=1,
-              validation_data=(X_valid, Y_valid),
-              )
+    model.load_weights('weights.best.h5')
+    model.save('densenet169_model.h5')
+    del model
 
-    # Make predictions
-    predictions_valid = model.predict(X_valid, batch_size=batch_size, verbose=1)
+    model = load_model('densenet169_model.h5')
 
-    # Cross-entropy loss score
-    score = log_loss(Y_valid, predictions_valid)
+    p_valid = model.predict(X_valid, batch_size=32)
+    print(Y_valid)
+    print(p_valid)
+    print(fbeta_score(Y_valid, np.array(p_valid) > 0.2, beta=2, average='samples'))
+
+    del X_train
+    del X_valid
+
+    df_test = pd.read_csv('../data/sample_submission_v2.csv')
+    X_test = []
+    for f, tags in tqdm(df_test.values, miniters=1000):
+        img = cv2.imread('../data/test-jpg/{}.jpg'.format(f))
+        X_test.append(cv2.resize(img, (128,128)))
+
+    X_test = np.array(X_test, np.float16) / 255.
+    p_test = model.predict(X_test, batch_size=32)
+    result = pd.DataFrame(p_test, columns=labels)
+    preds = []
+    for i in tqdm(range(result.shape[0]), miniters=1000):
+        a = result.ix[[i]]
+        a = a.apply(lambda x: x > 0.2, axis=1)
+        a = a.transpose()
+        a = a.loc[a[i] == True]
+        ' '.join(list(a.index))
+        preds.append(' '.join(list(a.index)))
+
+    df_test['tags'] = preds
+    df_test.to_csv('../submissions/submission_densenet169_model_224.csv', index=False)
+    gc.collect()
