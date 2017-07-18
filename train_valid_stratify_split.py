@@ -9,9 +9,6 @@ from sklearn.model_selection import StratifiedShuffleSplit
 df_train = pd.read_csv('data/train_v2.csv')
 
 # mapping labels to integer classes
-flatten = lambda l: [item for sublist in l for item in sublist]
-labels = list(set(flatten([l.split(' ') for l in df_train['tags'].values])))
-
 labels = ['blow_down',
  'bare_ground',
  'conventional_mine',
@@ -61,7 +58,7 @@ y_train = np.array(y_train, np.uint8)
 trn_index = []
 val_index = []
 # change split value for getting different validation splits
-split = .2
+split = .1
 index = np.arange(len(df_train))
 for i in tqdm(range(0,17)):
     sss = StratifiedShuffleSplit(n_splits=2, test_size=split, random_state=8)
