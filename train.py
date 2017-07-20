@@ -1,27 +1,30 @@
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
-import os
+from tqdm import tqdm
+import random
 import gc
 import cv2
-from tqdm import tqdm
-
-from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn.metrics import fbeta_score
+import sys
+sys.path.append('models/custom_layers')
 
 import keras as k
 from keras import optimizers
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.models import load_model
+
+from sklearn.metrics import fbeta_score
+
 from models.base_model import base_model
+from models.inceptionv4 import inception_v4_model
+from models.vgg19 import vgg19
+from models import densenet169
+from models.custom_layers import scale_layer
 
+from preprocess import process_image
 
-x_train = []
-y_train = []
 
 df_train = pd.read_csv('data/train_v2.csv')
-
-flatten = lambda l: [item for sublist in l for item in sublist]
-labels = list(set(flatten([l.split(' ') for l in df_train['tags'].values])))
+#df_valid = pd.read_csv('data/valid.csv')
 
 labels = ['blow_down',
  'bare_ground',
@@ -59,100 +62,82 @@ label_map = {'agriculture': 14,
  'slash_burn': 8,
  'water': 15}
 
-for f, tags in tqdm(df_train.values, miniters=1000):
-    img = cv2.imread('data/train-jpg/{}.jpg'.format(f))
-    targets = np.zeros(17)
-    for t in tags.split(' '):
-        targets[label_map[t]] = 1
-    x_train.append(cv2.resize(img, (128,128)))
-    y_train.append(targets)
 
-y_train = np.array(y_train, np.uint8)
-x_train = np.array(x_train, np.float16) / 255.
-
-print(x_train.shape)
-print(y_train.shape)
-
-trn_index = []
-val_index = []
-# change split value for getting different validation splits
-split = .2
-index = np.arange(len(x_train))
-for i in tqdm(range(0,17)):
-    sss = StratifiedShuffleSplit(n_splits=2, test_size=split, random_state=i)
-    for train_index, test_index in sss.split(index,y_train[:,i]):
-        X_train, X_test = index[train_index], index[test_index]
-    # to ensure there is no repetetion within each split and between the splits
-    trn_index = trn_index + list(set(list(X_train)) - set(trn_index) - set(val_index))
-    val_index = val_index + list(set(list(X_test)) - set(val_index) - set(trn_index))
-
-X_train = np.empty([32383,128,128,3])
-Y_train = np.empty([32383,17])
-for i in range(len(trn_index)):
-    X_train[i] = x_train[trn_index[i]]
-    Y_train[i] = y_train[trn_index[i]]
-
-X_valid = np.empty([8096,128,128,3])
-Y_valid = np.empty([8096,17])
-for i in range(len(val_index)):
-    X_valid[i] = x_train[val_index[i]]
-    Y_valid[i] = y_train[val_index[i]]
-
-del x_train
-del y_train
-
-print('X_train {}, Y_train {}'.format(len(X_train), len(Y_train)))
-print('X_valid {}, Y_valid {}'.format(len(X_valid), len(Y_valid)))
+def train_generator(batch_size):
+    while True:
+        x_train = []
+        y_train = []
+        for i in range(batch_size):
+            rand_index = random.randrange(len(df_train))
+            df = df_train.iloc[[rand_index]]
+            f = str(df['image_name'].item())
+            tags = df['tags'].item()
+            img = cv2.imread('data/train-jpg/{}.jpg'.format(f))
+            img = process_image(img)
+            targets = np.zeros(17)
+            for t in tags.split(' '):
+                targets[label_map[t]] = 1
+            x_train.append(img)
+            y_train.append(targets)
+        x_train = np.array(x_train, np.float16) / 255.
+        y_train = np.array(y_train, np.uint8)
+        yield x_train, y_train
 
 
-best_weights_path = 'models/weights.best.h5'
-model = base_model(128,128,3)
-epochs_arr = [20, 5, 5]
-learn_rates = [0.001, 0.0001, 0.00001]
-for learn_rate, epochs in zip(learn_rates, epochs_arr):
-    opt = optimizers.Adam(lr=learn_rate)
-    model.compile(loss='binary_crossentropy',
-                  optimizer=opt,
-                  metrics=['accuracy'])
-    callbacks = [EarlyStopping(monitor='val_loss', patience=2, verbose=0),
-                 ModelCheckpoint(best_weights_path, monitor='val_loss',
-                 save_best_only=True, verbose=0)]
+def valid_generator(batch_size):
+    while True:
+        x_valid = []
+        y_valid = []
+        for i in range(batch_size):
+            rand_index = random.randrange(len(df_valid))
+            df = df_valid.iloc[[rand_index]]
+            f = str(df['image_name'].item())
+            tags = df['tags'].item()
+            img = cv2.imread('data/valid/{}.jpg'.format(f))
+            img = cv2.resize(img, (224,224), interpolation=cv2.INTER_AREA)
+            targets = np.zeros(17)
+            for t in tags.split(' '):
+                targets[label_map[t]] = 1
+            x_valid.append(img)
+            y_valid.append(targets)
+        x_valid = np.array(x_valid, np.float16) / 255.
+        y_valid = np.array(y_valid, np.uint8)
+        yield x_valid, y_valid
 
-    model.fit(x=X_train, y=Y_train, validation_data=(X_valid, Y_valid),
-              batch_size=32, epochs=epochs, verbose=2, callbacks=callbacks, shuffle=True)
 
-model.load_weights('models/weights.best.h5')
-model.save('models/base_model.h5')
-del model
+if __name__=='__main__':
 
-model = load_model('models/base_model.h5')
+    #best_weights_path = 'models/densenet169_full_data_weights.best.h5'
+    last_weights_path = 'models/inceptionv4_weights.full.h5'
+    img_rows, img_cols = 299, 299 # Resolution of inputs
+    channels = 3
+    num_classes = 17
+    batch_size = 8
+    # Load our model
+    #model = base_model(128,128,3)
+    #model = vgg19(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
+    #model.load_weights('models/vgg19_weights.best.h5')
+    model = inception_v4_model(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes, dropout_keep_prob=0.2)
+    model.load_weights('models/inceptionv4_weights.best.h5')
+    epochs_arr = [2]
+    learn_rates = [0.00001]
+    for learn_rate, epochs in zip(learn_rates, epochs_arr):
+        opt = optimizers.Adam(lr=learn_rate)
+        model.compile(loss='binary_crossentropy',
+                      optimizer=opt,
+                      metrics=['accuracy'])
+        """
+        callbacks = [EarlyStopping(monitor='val_loss', patience=2, verbose=0),
+                     ModelCheckpoint(best_weights_path, monitor='val_loss',
+                     save_best_only=True, verbose=0)]
+        """
 
-p_valid = model.predict(X_valid, batch_size=32)
-print(Y_valid)
-print(p_valid)
-print(fbeta_score(Y_valid, np.array(p_valid) > 0.2, beta=2, average='samples'))
+        model.fit_generator(train_generator(batch_size=batch_size),
+                            samples_per_epoch=40480 // batch_size,
+                            epochs=epochs,
+                            validation_data=None,#valid_generator(batch_size=batch_size),
+                            validation_steps=None,#4048 // batch_size,
+                            #callbacks=callbacks,
+                            verbose=2)
 
-del X_train
-del X_valid
-
-df_test = pd.read_csv('data/sample_submission_v2.csv')
-X_test = []
-for f, tags in tqdm(df_test.values, miniters=1000):
-    img = cv2.imread('data/test-jpg/{}.jpg'.format(f))
-    X_test.append(cv2.resize(img, (128,128)))
-
-X_test = np.array(X_test, np.float16) / 255.
-p_test = model.predict(X_test, batch_size=32)
-result = pd.DataFrame(p_test, columns=labels)
-preds = []
-for i in tqdm(range(result.shape[0]), miniters=1000):
-    a = result.ix[[i]]
-    a = a.apply(lambda x: x > 0.2, axis=1)
-    a = a.transpose()
-    a = a.loc[a[i] == True]
-    ' '.join(list(a.index))
-    preds.append(' '.join(list(a.index)))
-
-df_test['tags'] = preds
-df_test.to_csv('submissions/submission_base_model_128.csv', index=False)
-gc.collect()
+    model.save_weights(last_weights_path)

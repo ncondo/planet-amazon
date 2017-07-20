@@ -1,8 +1,8 @@
 import keras as k
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
-from keras.layers import Conv2D, MaxPooling2D, BatchNormalization
-from keras.optimizers import SGD
+from keras.layers import Conv2D, MaxPooling2D, BatchNormalization, Activation
+from keras.activations import selu
 
 
 def base_model(img_rows, img_cols, num_channels):
@@ -36,5 +36,4 @@ def base_model(img_rows, img_cols, num_channels):
 
     #sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
     #model.compile(optimizer=sgd, loss='binary_crossentropy', metrics=['accuracy'])
-
     return model
