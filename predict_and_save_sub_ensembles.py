@@ -85,46 +85,46 @@ if __name__=='__main__':
     num_classes = 17
     # Define vgg weights paths
     vgg_best_weights_path = 'models/vgg19_weights.best.h5'
-    #vgg_last_weights_path = 'models/vgg19_weights.last.h5'
-    #vgg_test_weights_path = 'models/vgg19_weights.test.h5'
-    #vgg_full_weights_path = 'models/vgg19_weights.full.h5'
+    vgg_last_weights_path = 'models/vgg19_weights.last.h5'
+    vgg_test_weights_path = 'models/vgg19_weights.test.h5'
+    vgg_full_weights_path = 'models/vgg19_weights.full.h5'
     # Define densenet weights paths
     densenet_best_weights_path = 'models/densenet169_weights.best.h5'
-    #densenet_last_weights_path = 'models/densenet169_weights.last.h5'
-    #densenet_test_weights_path = 'models/densenet169_weights.test.h5'
-    #densenet_full_weights_path = 'models/densenet169_weights.full.h5'
+    densenet_last_weights_path = 'models/densenet169_weights.last.h5'
+    densenet_test_weights_path = 'models/densenet169_weights.test.h5'
+    densenet_full_weights_path = 'models/densenet169_weights.full.h5'
     # Define inception weights paths
     inception_best_weights_path = 'models/inceptionv4_weights.best.h5'
-    #inception_last_weights_path = 'models/inceptionv4_weights.last.h5'
-    #inception_test_weights_path = 'models/inceptionv4_weights.test.h5'
-    #inception_full_weights_path = 'models/inceptionv4_weights.full.h5'
+    inception_last_weights_path = 'models/inceptionv4_weights.last.h5'
+    inception_test_weights_path = 'models/inceptionv4_weights.test.h5'
+    inception_full_weights_path = 'models/inceptionv4_weights.full.h5'
     # Load vgg models
     vgg_best = vgg19(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
     vgg_best.load_weights(vgg_best_weights_path)
-    #vgg_last = vgg19(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
-    #vgg_last.load_weights(vgg_last_weights_path)
-    #vgg_test = vgg19(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
-    #vgg_test.load_weights(vgg_test_weights_path)
-    #vgg_full = vgg19(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
-    #vgg_full.load_weights(vgg_full_weights_path)
+    vgg_last = vgg19(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
+    vgg_last.load_weights(vgg_last_weights_path)
+    vgg_test = vgg19(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
+    vgg_test.load_weights(vgg_test_weights_path)
+    vgg_full = vgg19(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
+    vgg_full.load_weights(vgg_full_weights_path)
     # Load densenet models
     densenet_best = densenet169_model(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
     densenet_best.load_weights(densenet_best_weights_path)
-    #densenet_last = densenet169_model(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
-    #densenet_last.load_weights(densenet_last_weights_path)
-    #densenet_test = densenet169_model(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
-    #densenet_test.load_weights(densenet_test_weights_path)
-    #densenet_full = densenet169_model(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
-    #densenet_full.load_weights(densenet_full_weights_path)
+    densenet_last = densenet169_model(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
+    densenet_last.load_weights(densenet_last_weights_path)
+    densenet_test = densenet169_model(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
+    densenet_test.load_weights(densenet_test_weights_path)
+    densenet_full = densenet169_model(img_rows=img_rows, img_cols=img_cols, channels=channels, num_classes=num_classes)
+    densenet_full.load_weights(densenet_full_weights_path)
     # Load inception models
     inception_best = inception_v4_model(img_rows=299, img_cols=299, channels=channels, num_classes=num_classes, dropout_keep_prob=0.2)
     inception_best.load_weights(inception_best_weights_path)
-    #inception_last = inception_v4_model(img_rows=299, img_cols=299, channels=channels, num_classes=num_classes, dropout_keep_prob=0.2)
-    #inception_last.load_weights(inception_last_weights_path)
-    #inception_test = inception_v4_model(img_rows=299, img_cols=299, channels=channels, num_classes=num_classes, dropout_keep_prob=0.2)
-    #inception_test.load_weights(inception_test_weights_path)
-    #inception_full = inception_v4_model(img_rows=299, img_cols=299, channels=channels, num_classes=num_classes, dropout_keep_prob=0.2)
-    #inception_full.load_weights(inception_full_weights_path)
+    inception_last = inception_v4_model(img_rows=299, img_cols=299, channels=channels, num_classes=num_classes, dropout_keep_prob=0.2)
+    inception_last.load_weights(inception_last_weights_path)
+    inception_test = inception_v4_model(img_rows=299, img_cols=299, channels=channels, num_classes=num_classes, dropout_keep_prob=0.2)
+    inception_test.load_weights(inception_test_weights_path)
+    inception_full = inception_v4_model(img_rows=299, img_cols=299, channels=channels, num_classes=num_classes, dropout_keep_prob=0.2)
+    inception_full.load_weights(inception_full_weights_path)
 
     # Check f2 score on validation set
     if get_fscore:
@@ -143,32 +143,32 @@ if __name__=='__main__':
             img_299 = np.expand_dims(img_299, axis=0)
             # Get predictions from vgg models
             vgg_best_pred = vgg_best.predict(img_224, batch_size=1)
-            #vgg_last_pred = vgg_last.predict(img_224, batch_size=1)
-            #vgg_test_pred = vgg_test.predict(img_224, batch_size=1)
-            #vgg_full_pred = vgg_full.predict(img_224, batch_size=1)
+            vgg_last_pred = vgg_last.predict(img_224, batch_size=1)
+            vgg_test_pred = vgg_test.predict(img_224, batch_size=1)
+            vgg_full_pred = vgg_full.predict(img_224, batch_size=1)
             # Get predictions from densenet models
             densenet_best_pred = densenet_best.predict(img_224, batch_size=1)
-            #densenet_last_pred = densenet_last.predict(img_224, batch_size=1)
-            #densenet_test_pred = densenet_test.predict(img_224, batch_size=1)
-            #densenet_full_pred = densenet_full.predict(img_224, batch_size=1)
+            densenet_last_pred = densenet_last.predict(img_224, batch_size=1)
+            densenet_test_pred = densenet_test.predict(img_224, batch_size=1)
+            densenet_full_pred = densenet_full.predict(img_224, batch_size=1)
             # Get predictions from inception models
             inception_best_pred = inception_best.predict(img_299, batch_size=1)
-            #inception_last_pred = inception_last.predict(img_299, batch_size=1)
-            #inception_test_pred = inception_test.predict(img_299, batch_size=1)
-            #inception_full_pred = inception_full.predict(img_299, batch_size=1)
+            inception_last_pred = inception_last.predict(img_299, batch_size=1)
+            inception_test_pred = inception_test.predict(img_299, batch_size=1)
+            inception_full_pred = inception_full.predict(img_299, batch_size=1)
             # Combine predictions and get average
-            total = np.add(vgg_best_pred, densenet_best_pred)
-            #total = np.add(total, vgg_test_pred)
-            #total = np.add(total, vgg_full_pred)
-            #total = np.add(total, densenet_best_pred)
-            #total = np.add(total, densenet_last_pred)
-            #total = np.add(total, densenet_test_pred)
-            #total = np.add(total, densenet_full_pred)
+            total = np.add(vgg_best_pred, vgg_last_pred)
+            total = np.add(total, vgg_test_pred)
+            total = np.add(total, vgg_full_pred)
+            total = np.add(total, densenet_best_pred)
+            total = np.add(total, densenet_last_pred)
+            total = np.add(total, densenet_test_pred)
+            total = np.add(total, densenet_full_pred)
             total = np.add(total, inception_best_pred)
-            #total = np.add(total, inception_last_pred)
-            #total = np.add(total, inception_test_pred)
-            #total = np.add(total, inception_full_pred)
-            avg = total / 3
+            total = np.add(total, inception_last_pred)
+            total = np.add(total, inception_test_pred)
+            total = np.add(total, inception_full_pred)
+            avg = total / 12
             p_valid = np.vstack((p_valid, avg))
             targets = np.zeros(17)
             for t in tags.split(' '):
@@ -225,32 +225,32 @@ if __name__=='__main__':
             img_299 = np.expand_dims(img_299, axis=0)
             # Get predictions from vgg models
             vgg_best_pred = vgg_best.predict(img_224, batch_size=1)
-            #vgg_last_pred = vgg_last.predict(img_224, batch_size=1)
-            #vgg_test_pred = vgg_test.predict(img_224, batch_size=1)
-            #vgg_full_pred = vgg_full.predict(img_224, batch_size=1)
+            vgg_last_pred = vgg_last.predict(img_224, batch_size=1)
+            vgg_test_pred = vgg_test.predict(img_224, batch_size=1)
+            vgg_full_pred = vgg_full.predict(img_224, batch_size=1)
             # Get predictions from densenet models
             densenet_best_pred = densenet_best.predict(img_224, batch_size=1)
-            #densenet_last_pred = densenet_last.predict(img_224, batch_size=1)
-            #densenet_test_pred = densenet_test.predict(img_224, batch_size=1)
-            #densenet_full_pred = densenet_full.predict(img_224, batch_size=1)
+            densenet_last_pred = densenet_last.predict(img_224, batch_size=1)
+            densenet_test_pred = densenet_test.predict(img_224, batch_size=1)
+            densenet_full_pred = densenet_full.predict(img_224, batch_size=1)
             # Get predictions from inception models
             inception_best_pred = inception_best.predict(img_299, batch_size=1)
-            #inception_last_pred = inception_last.predict(img_299, batch_size=1)
-            #inception_test_pred = inception_test.predict(img_299, batch_size=1)
-            #inception_full_pred = inception_full.predict(img_299, batch_size=1)
+            inception_last_pred = inception_last.predict(img_299, batch_size=1)
+            inception_test_pred = inception_test.predict(img_299, batch_size=1)
+            inception_full_pred = inception_full.predict(img_299, batch_size=1)
             # Combine predictions and get average
-            total = np.add(vgg_best_pred, densenet_best_pred)
-            #total = np.add(total, vgg_test_pred)
-            #total = np.add(total, vgg_full_pred)
-            #total = np.add(total, densenet_best_pred)
-            #total = np.add(total, densenet_last_pred)
-            #total = np.add(total, densenet_test_pred)
-            #total = np.add(total, densenet_full_pred)
+            total = np.add(vgg_best_pred, vgg_last_pred)
+            total = np.add(total, vgg_test_pred)
+            total = np.add(total, vgg_full_pred)
+            total = np.add(total, densenet_best_pred)
+            total = np.add(total, densenet_last_pred)
+            total = np.add(total, densenet_test_pred)
+            total = np.add(total, densenet_full_pred)
             total = np.add(total, inception_best_pred)
-            #total = np.add(total, inception_last_pred)
-            #total = np.add(total, inception_test_pred)
-            #total = np.add(total, inception_full_pred)
-            avg = total / 3
+            total = np.add(total, inception_last_pred)
+            total = np.add(total, inception_test_pred)
+            total = np.add(total, inception_full_pred)
+            avg = total / 12
             p_test = np.vstack((p_test, avg))
 
         p_test = np.delete(p_test, 0, axis=0)
