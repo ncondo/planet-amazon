@@ -210,7 +210,7 @@ if __name__=='__main__':
     # Create submission
     if create_submission:
         del p_valid, Y_valid
-        df_test = pd.read_csv('data/sample_submission_v2.csv')
+        df_test = pd.read_csv('submissions/sample_submission_v2.csv')
         p_test = np.zeros(17)
         for f, tags in tqdm(df_test.values, miniters=1000):
             img = cv2.imread('data/test-jpg/{}.jpg'.format(f))

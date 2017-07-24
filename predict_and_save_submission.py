@@ -115,7 +115,7 @@ if __name__=='__main__':
 
     del X_valid, Y_valid
 
-    df_test = pd.read_csv('data/sample_submission_v2.csv')
+    df_test = pd.read_csv('submissions/sample_submission_v2.csv')
     X_test = []
     for f, tags in tqdm(df_test.values, miniters=1000):
         img = cv2.imread('data/test-jpg/{}.jpg'.format(f))
@@ -138,55 +138,4 @@ if __name__=='__main__':
     df_test['tags'] = preds
     df_test.to_csv('submissions/submission_vgg19_full_data.csv', index=False)
 
-
-
-    """
-    out = np.array(p_valid)
-    threshold = np.arange(0.1, 0.9, 0.1)
-    acc = []
-    accuracies = []
-    best_threshold = np.zeros(out.shape[1])
-    for i in range(out.shape[1]):
-        y_prob = np.array(out[:,i])
-        for j in threshold:
-            y_pred = [1 if prob >= j else 0 for prob in y_prob]
-            acc.append( matthews_corrcoef(Y_valid[:,i], y_pred))
-        acc = np.array(acc)
-        index = np.where(acc==acc.max())
-        accuracies.append(acc.max())
-        best_threshold[i] = threshold[index[0][0]]
-        acc = []
-
-    print(best_threshold)
-
-    y_pred = np.array([[1 if out[i,j]>=best_threshold[j] else 0 for j in range(Y_valid.shape[1])] for i in range(len(Y_valid))])
-    print(fbeta_score(Y_valid, y_pred, beta=2, average='samples'))
-
-    del X_train, X_valid
-    gc.collect()
-
-    df_test = pd.read_csv('data/sample_submission_v2.csv')
-    X_test = []
-    for f, tags in tqdm(df_test.values, miniters=1000):
-        img = cv2.imread('data/test-jpg/{}.jpg'.format(f))
-        X_test.append(cv2.resize(img, (128,128)))
-
-    X_test = np.array(X_test, np.float16) / 255.
-    p_test = model.predict(X_test, batch_size=32)
-    out = np.array(p_test)
-
-    y_pred = np.array([[1 if out[i,j]>=best_threshold[j] else 0 for j in range(p_test.shape[1])] for i in range(len(p_test))])
-    result = pd.DataFrame(y_pred, columns=labels)
-    preds = []
-    for i in tqdm(range(result.shape[0]), miniters=1000):
-        a = result.ix[[i]]
-        a = a.apply(lambda x: x == 1, axis=1)
-        a = a.transpose()
-        a = a.loc[a[i] == True]
-        ' '.join(list(a.index))
-        preds.append(' '.join(list(a.index)))
-
-    df_test['tags'] = preds
-    df_test.to_csv('submissions/submission_base_model_thresh_128.csv', index=False)
-    """
     gc.collect()
